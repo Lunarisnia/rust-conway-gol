@@ -1,7 +1,7 @@
-use std::io;
+use std::{io, thread, time};
 
-const ROW: usize = 3;
-const COL: usize = 3;
+const ROW: usize = 9;
+const COL: usize = 9;
 
 #[derive(Copy, Clone, Debug)]
 struct Position(i32, i32);
@@ -110,6 +110,7 @@ fn render(world: &[[Cell; COL]; ROW]) {
 // Any live cell with more than three live neighbors dies, as if by overpopulation.
 // Any dead cell with exactly three live neighbors becomes a live cell, as if by reproduction.
 fn step(world: &mut [[Cell; COL]; ROW]) {
+    let mut update_list : Vec<(Position, bool)> = Vec::new(); 
     for i in 0..ROW {
         for j in 0..COL {
             let mut active_neighbour_count = 0;
@@ -132,18 +133,26 @@ fn step(world: &mut [[Cell; COL]; ROW]) {
             // print!(" {} ", active_neighbour_count);
             if world[i][j].status {
                 if active_neighbour_count > 1 && active_neighbour_count < 4 {
-                    world[i][j].status = true;
+                    // world[i][j].status = true;
+                    update_list.push((Position(i as i32, j as i32), true));
                 } else if active_neighbour_count < 2 || active_neighbour_count > 3 {
-                    world[i][j].status = false;
+                    // world[i][j].status = false;
+                    update_list.push((Position(i as i32, j as i32), false));
                 }
             } else {
                 if active_neighbour_count == 3 {
                     // println!("GOES HERE");
-                    world[i][j].status = true;
+                    // world[i][j].status = true;
+                    update_list.push((Position(i as i32, j as i32), true));
                 }
             }
         }
         // println!();
+    }
+
+    // Actually modify the world
+    for (update_position, new_status) in &update_list {
+        world[update_position.0 as usize][update_position.1 as usize].status = *new_status;
     }
 }
 
@@ -160,24 +169,22 @@ fn main() {
         }
     }
 
-    // Print out all the coordinates
-    // for (_, rows) in world.iter().enumerate().take(ROW) {
-    //     for (_, cell) in rows.iter().enumerate().take(COL) {
-    //         println!("{}: AAA", cell.position);
-    //     }
-    // }
-
+    // Initial seeds
     world[1][1].status = true;
     world[2][1].status = true;
     world[1][2].status = true;
     world[0][1].status = true;
-    world[2][2].status = true;
+    world[3][4].status = true;
+    world[3][5].status = true;
+    world[4][5].status = true;
 
-    let mut input: String = "".to_string();
     loop {
-        // print!("{}[2J", 27 as char);
+        print!("{}[2J", 27 as char);
         render(&world);
-        let _ = io::stdin().read_line(&mut input);
+        // let mut input: String = "".to_string(); // Uncomment this for pause every step
+        // let _ = io::stdin().read_line(&mut input); // Uncomment this for pause every step
+
+        thread::sleep(time::Duration::from_millis(250));
         step(&mut world);
     }
 }
